@@ -4,6 +4,7 @@ mod lobbycalls;
 use chrono::{DateTime, Duration, Timelike, Utc};
 use sqlx::postgres::PgConnectOptions;
 use sqlx::ConnectOptions;
+const DEFAULT_PORT: u16 = 5432;
 fn get_target_table_name_from_mode_and_region(region: &String, mode: &String) -> String {
     let mut region_clone = region.clone();
     let mut mode_clone = mode.clone();
@@ -18,15 +19,19 @@ fn get_target_table_name_from_mode_and_region(region: &String, mode: &String) ->
 #[allow(unreachable_code)]
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
+    let port = env::var("XXPORT")
+        .ok()
+        .and_then(|port| port.parse::<u16>().ok())
+        .unwrap_or(DEFAULT_PORT);
     let mut conn = PgConnectOptions::new()
-        .host(std::env::var("PG_HOST").unwrap().as_str())
+        .host("localhost")
         .database(std::env::var("PG_DBNAME").unwrap().as_str())
-        .port(5432)
+        .port(port)
         .username(std::env::var("PG_USER").unwrap().as_str())
         .password(std::env::var("PG_PASSWORD").unwrap().as_str())
         .connect()
         .await?;
-    sqlx::migrate!().run(&mut conn).await?;
+    sqlx::migrate!("./migrations").run(&mut conn).await?;
     let mut target_dt = get_prev_5_min_dt(Utc::now());
     loop {
         target_dt = target_dt
@@ -51,7 +56,7 @@ async fn main() -> Result<(), sqlx::Error> {
                     .await?;
             }
         } else {
-            panic!("{:?}", a.unwrap_err());
+            println!("failed to get data with error {}",a.unwrap_err());
         }
     }
     Ok(())
