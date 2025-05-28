@@ -3,7 +3,7 @@
 
 ## What is this project?
 
-This project works with the API for the game <https://blocktanks.io> to collect data on player activity and map popularity. It stores data in a SQL database in this form and periodically (every 24 hours) downloads data to csv files so they can be analyzed.
+This project works with the API for the game <https://blocktanks.io> to collect data on player activity and map popularity. It stores data in a SQL database in this form and periodically (every 24 hours) downloads data to csv files so they can be analyzed. The shell script also creates a python http server that lets people download a zip file of the latest data from a website.
 
 ```
  id |         time_taken         | total_humans | signed_up_players | max_players | avg_hours_played |      map
@@ -77,8 +77,17 @@ And in another window run
 sudo nohup ./make_csv_files.sh > output.log 2>&1 &
 ```
 
+To shut down the server, if using Docker simply run
+```bash
+docker compose kill
+pkill -f make_csv_files.sh
+rm server.pid
+sudo rm -rf data
+```
+If not using Docker, just replace the first `docker compose kill` command with a `ctrl+c` for the Cargo process.
+
 ## Planned Updates
 
 1. Creating an API and deploying it on an AWS ec2 instance so people can ping it get the latest csv files. Work in progress
 2. Simplifying the deployment process a bit.
-3. Better error handling so it doesn't crash when the blocktanks servers are down.
+3. Fixing file permissions so you don't need `sudo` for cleaning up logfiles and data files
